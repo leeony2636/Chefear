@@ -55,7 +55,7 @@ from transformers import (
 
 from orchestration.db import load_env
 
-# This personal archive keeps STT directly under the repository root.
+# The personal archive keeps STT directly under the repository root.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # python-dotenv는 requirements-stt.txt(학습 전용)에만 있고 배포용 requirements.txt에는
