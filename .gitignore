@@ -1,0 +1,26 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*token*
+*secret*
+
+# Model weights and local checkpoints
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+**/checkpoints/
+**/converted_models/
+**/models/
+
+# Local data and generated outputs
+**/TRAIN_DATA/
+**/TRAIN_AUDIO/
+__pycache__/
+*.pyc
+*.wav
+*.mp3
