@@ -55,7 +55,8 @@ from transformers import (
 
 from orchestration.db import load_env
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# This personal archive keeps STT directly under the repository root.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # python-dotenv는 requirements-stt.txt(학습 전용)에만 있고 배포용 requirements.txt에는
 # 없다 — src/tts/infer.py와 동일하게 orchestration.db.load_env()를 재사용해서 새 의존성
