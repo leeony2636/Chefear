@@ -2,37 +2,32 @@
 
 `docs/specs/stt_deploy.md`의 "변환 파이프라인" 절 그대로 구현한 것 — 배포 런타임에서 실행되는
 코드가 아니라, 개발자가 로컬/Colab에서 한 번 돌려서 결과물(CTranslate2 int8 모델)을 만들어두는
-오프라인 스크립트다. `src/stt/infer.py`의 `stt_transcribe()`가 이 결과물을 읽는다.
+오프라인 스크립트다. `stt/infer.py`의 배포용 추론 코드가 이 결과물을 읽는다.
 
 왜 필요한가: faster-whisper는 HuggingFace transformers 체크포인트를 직접 못 읽고 CTranslate2
 포맷만 읽는다. 지금 STT는 base(openai/whisper-large-v3-turbo) + LoRA 어댑터
-(leeony/chefear-stt-large-v3-turbo) 구조라, 변환 전에 merge_and_unload()로 먼저 하나의
-체크포인트로 합쳐야 한다(TTS가 이미 쓰는 merge 패턴과 동일, src/tts/infer.py 상단 주석 참고).
+(비공개 QLoRA Adapter) 구조라, 변환 전에 merge_and_unload()로 먼저 하나의
+체크포인트로 합쳐야 한다.
 
 출력:
     models/stt_finetuned/_merged_fp16/   병합된 HF 포맷 체크포인트 (중간 산출물)
     models/stt_finetuned/ct2_int8/       CTranslate2 int8 변환 결과 (stt_transcribe()가 읽음)
 둘 다 git 미추적(.gitignore의 "models/" 패턴).
 
-실행: python src/stt/export_ct2.py
+실행: python stt/export_ct2.py
 """
 from __future__ import annotations
 
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import torch
 from peft import PeftModel
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-from orchestration.db import load_env
-
-load_env()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # 2026-08-22 팀 결정(docs/decisions.md #2, 배포가 GPU 데스크탑 상시 노출로 확정됨)으로
 # CPU 강제(os.environ["CUDA_VISIBLE_DEVICES"] = "")를 없애고 GPU를 쓰도록 바꿨다. 예전엔
@@ -46,7 +41,9 @@ if not torch.cuda.is_available():
     )
 
 BASE_MODEL_ID = "openai/whisper-large-v3-turbo"
-ADAPTER_ID = os.environ.get("HF_STT_MODEL_REPO") or "leeony/chefear-stt-large-v3-turbo"
+ADAPTER_ID = os.environ.get("HF_STT_MODEL_REPO")
+if not ADAPTER_ID:
+    raise RuntimeError(".env에 HF_STT_MODEL_REPO를 설정해야 합니다.")
 
 MERGED_DIR = PROJECT_ROOT / "models" / "stt_finetuned" / "_merged_fp16"
 CT2_DIR = PROJECT_ROOT / "models" / "stt_finetuned" / "ct2_int8"
