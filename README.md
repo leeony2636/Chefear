@@ -4,6 +4,18 @@ AI 음성 레시피 어시스턴트 프로젝트에서 수행한 개인 STT 모�
 
 요리 중 화면이나 키보드를 조작하기 어려운 상황에서도 음성으로 레시피를 조회하고 조리 단계를 진행할 수 있도록, 요리 도메인에 특화된 STT 모델을 개발했습니다.
 
+## 📌 최종 모델 요약
+
+| 항목 | 내용 |
+|---|---|
+| 기반 모델 | Whisper Large-v3-turbo |
+| 학습 방식 | QLoRA |
+| 최종 Adapter | BEST_FINAL_mix750_replay_numeric |
+| 배포 형식 | CTranslate2 int8 |
+| 추론 엔진 | faster-whisper |
+| 추론 환경 | CUDA GPU |
+| 모델 저장 위치 | 비공개 Hugging Face 저장소 |
+
 ## 🧑‍💻 담당 업무
 
 - Whisper Small, wav2vec2, Whisper Large-v3-turbo 모델 비교
