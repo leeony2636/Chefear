@@ -1,197 +1,165 @@
-# 🍳 ChefEar
+# 🍳 ChefEar STT
 
-AI 음성 레시피 어시스턴트 프로젝트에서 수행한 개인 STT 모델 개발 및 실험 결과를 정리한 저장소입니다.
+ChefEar 음성 레시피 어시스턴트 프로젝트에서 담당한 개인 STT 모델 개발 및 실험 결과를 정리한 저장소입니다.
 
-요리 중 화면이나 키보드를 조작하기 어려운 상황에서도 음성으로 레시피를 조회하고 조리 단계를 진행할 수 있도록, 요리 도메인에 특화된 STT 모델을 개발했습니다.
+ChefEar는 요리 중 화면이나 키보드를 조작하기 어려운 상황에서도 음성으로 레시피를 조회하고 조리 단계를 진행할 수 있도록 설계된 음성 레시피 서비스입니다.
 
-## 📌 최종 모델 요약
+본 저장소에서는 해당 프로젝트에서 수행한 STT 모델 개발, 파인튜닝, 평가 및 경량화 과정을 중심으로 다룹니다.
 
-| 항목 | 내용 |
-|---|---|
-| 기반 모델 | Whisper Large-v3-turbo |
-| 학습 방식 | QLoRA |
-| 최종 Adapter | BEST_FINAL_mix750_replay_numeric |
-| 배포 형식 | CTranslate2 int8 |
-| 추론 엔진 | faster-whisper |
-| 추론 환경 | CUDA GPU |
-| 모델 저장 위치 | 비공개 Hugging Face 저장소 |
+## 🎯 STT 개발 목표
+
+요리 중 사용자가 음성으로 말한 다음 정보를 안정적으로 인식하는 것을 목표로 했습니다.
+
+- 요리명
+- 재료명
+- 수량
+- 계량 단위
+- 조리동작
+- 조리 단계 진행 명령
+- 긴 조리 안내 문장
+
+## 🔊 STT 처리 흐름
+
+```text
+Voice Input
+→ Fine-tuned Whisper STT
+→ Recognized Text
+→ Recipe / Voice Command Processing
+```
+
+STT가 변환한 텍스트는 ChefEar 통합 서비스의 레시피 조회 및 음성 명령 처리에 활용됩니다.
 
 ## 🧑‍💻 담당 업무
 
 - Whisper Small, wav2vec2, Whisper Large-v3-turbo 모델 비교
 - Whisper Large-v3-turbo 기반 QLoRA 파인튜닝
 - 요리 도메인 음성 데이터 전처리 및 학습
-- Fixed100 / New500 데이터셋 기반 WER·CER 평가
+- Fixed100·신규500 데이터셋 기반 평가
+- WER·CER 기반 성능 비교
+- 숫자·수량·단위 취약유형 분석
+- 재료명·조리동작·긴 문장 인식 성능 분석
 - 최종 STT 모델 선정
-- 숫자·수량·단위 표현 인식 보정
-- TTS 음성 → STT 재인식 통합 테스트
-- 파인튜닝 모델의 CTranslate2 변환 및 int8 경량화
+- TTS 음성의 STT 재인식 테스트
+- CTranslate2 및 faster-whisper 기반 추론 경량화
 - Git Branch / Pull Request / Review 기반 협업
 
-## 🔊 STT 처리 흐름
+## 🧠 기반 모델 및 파인튜닝
 
-> Voice Input  
-> → Fine-tuned Whisper STT  
-> → Recognized Text  
-> → WER·CER Evaluation  
-> → Voice Command Processing
+Whisper Small, wav2vec2, Whisper Large-v3-turbo를 비교한 뒤, 한국어 음성 인식 성능과 요리 도메인 적용 가능성을 고려하여 Whisper Large-v3-turbo를 기반 모델로 선정했습니다.
 
-## 🧠 모델 개발
+이후 요리명, 재료명, 수량, 단위 및 조리동작이 포함된 음성 데이터에 QLoRA 파인튜닝을 적용했습니다.
 
-Whisper Small, wav2vec2, Whisper Large-v3-turbo를 비교한 뒤, 요리 관련 음성 인식 성능과 확장성을 고려하여 Whisper Large-v3-turbo를 최종 기반 모델로 선정했습니다.
+학습 과정에서는 오류 유형을 분석하고 숫자·수량·단위와 같은 취약유형 데이터를 보강하여 요리 도메인에 필요한 핵심정보 인식 성능을 개선했습니다.
 
-이후 요리명, 재료명, 수량, 단위, 조리 명령어가 포함된 데이터로 QLoRA 파인튜닝을 수행했습니다.
+## 🧪 평가 방식
 
-최종적으로 다음 Adapter를 기준 모델로 선정했습니다.
+다음 기준으로 STT 모델을 평가했습니다.
+
+### Fixed100
+
+고정된 100개 문장을 사용하여 기본 음성 인식 성능을 평가했습니다.
+
+### 신규500
+
+기존 학습 데이터와 겹치지 않는 신규 500개 문장을 사용하여 일반화 성능을 평가했습니다.
+
+### 도메인 핵심정보 평가
+
+다음 항목을 별도로 평가했습니다.
+
+- 숫자·수량·단위
+- 재료명
+- 조리동작
+- 긴 문장
+- 발음이 유사한 표현
+
+### TTS 음성 재인식
+
+TTS가 생성한 음성을 STT에 다시 입력하여 실제 음성 출력 환경에서의 인식 결과를 확인했습니다.
+
+## ✅ 최종 모델 선정 기준
+
+최종 모델은 단일 WER 또는 CER만으로 선정하지 않았습니다.
+
+다음 항목을 종합적으로 비교했습니다.
+
+- Fixed100 성능
+- 신규500 일반화 성능
+- 문장 전체 일치율
+- 숫자·수량·단위 인식
+- 재료명 인식
+- 조리동작 인식
+- 긴 문장 처리 성능
+- 특정 데이터 보강에 따른 전체 성능 변화
+- 실시간 추론 적용 가능성
+
+전체 일반화 성능과 요리 도메인 핵심정보 인식 성능의 균형을 기준으로 최종 모델을 선정했습니다.
+
+## 💪 STT 모델의 강점
+
+- 요리 도메인에 특화된 음성 인식
+- 재료명과 조리동작 인식에 강점
+- 숫자·수량·단위 표현을 별도로 분석하고 보강
+- 신규 문장을 활용한 일반화 성능 검증
+- 실시간 추론을 고려한 모델 경량화
+- TTS 출력 음성 재인식을 통한 실제 음성 환경 검증
+
+## ⚠️ STT 모델의 한계
+
+- 긴 문장에서 일부 단어가 누락되거나 다르게 인식될 수 있음
+- 발음이 유사한 요리명과 재료명 구분에 한계가 있음
+- 숫자·수량·단위가 항상 완벽하게 인식되지는 않음
+- 문장 전체가 완전히 일치하지 않는 경우가 있음
+- 주변 소음과 발화 속도에 따라 인식 결과가 달라질 수 있음
+
+## ⚡ 모델 경량화
+
+실시간 추론을 위해 파인튜닝 모델을 배포용 형식으로 변환하여 faster-whisper 기반 추론 환경에 적용했습니다.
 
 ```text
-BEST_FINAL_mix750_replay_numeric
+Fine-tuned Model
+→ 배포용 형식 변환
+→ 경량화
+→ faster-whisper 실시간 추론
 ```
 
-V2 추가 파인튜닝도 진행했지만 성능 개선이 충분하지 않아, 현재 최종 모델은 V1 기반 Adapter를 사용합니다.
+학습용 모델과 배포용 모델은 목적에 따라 구분하여 관리합니다.
 
-## 📊 평가
+## 📊 평가 결과
 
-다음 데이터셋을 기준으로 모델 성능을 평가했습니다.
+상세한 평가 수치와 문장별 예측 결과는 다음 문서에서 확인할 수 있습니다.
 
-- Fixed100
-- New500
-- 고위험 음성 명령어 데이터
-- 숫자·수량·단위 테스트 데이터
-- TTS 출력 음성 재인식 데이터
-
-주요 평가 지표는 다음과 같습니다.
-
-- WER
-- CER
-- 요리명 인식 정확도
-- 재료명 인식 정확도
-- 수량 및 단위 인식 정확도
-- 음성 명령어 인식 정확도
-
-세부 평가 결과는 다음 폴더에서 확인할 수 있습니다.
-
-```text
-docs/stt-results/
-docs/stt-comparison/
-```
-
-## ⚡ STT 모델 경량화
-
-학습 및 오프라인 평가에서는 Transformers와 PEFT 기반의 QLoRA Adapter를 사용합니다.
-
-실시간 추론과 배포를 위해서는 파인튜닝 모델을 CTranslate2 형식으로 변환하고 int8로 경량화합니다.
-
-```text
-Fine-tuned LoRA Adapter
-→ Base Model과 병합
-→ CTranslate2 변환
-→ int8 양자화
-→ faster-whisper 추론
-```
-
-배포용 모델은 다음과 같이 로드합니다.
-
-```python
-WhisperModel(
-    model_path,
-    device="cuda",
-    compute_type="int8"
-)
-```
-
-학습용 모델과 배포용 모델은 다음과 같이 구분됩니다.
-
-| 구분 | 사용 방식 |
-|---|---|
-| 학습·오프라인 평가 | Transformers + PEFT + QLoRA |
-| 실시간·배포 추론 | faster-whisper + CTranslate2 int8 |
-| 기반 모델 | Whisper Large-v3-turbo |
-| 최종 Adapter | `BEST_FINAL_mix750_replay_numeric` |
+- [STT 평가 결과](./docs/stt-results/README.md)
+- [통합 실험 보고서](./docs/stt-results/result.ipynb)
+- [모델 비교 결과](./docs/stt-results/ChefEar_STT_3model_comparison_final.csv)
 
 ## 📁 폴더 안내
 
-- `stt/`: STT 학습·추론·평가·변환 코드
-- `docs/stt-results/`: WER·CER 및 최종 평가 결과
-- `docs/stt-comparison/`: 모델 비교 및 실험 자료
-- `integration/`: STT·TTS 재인식 및 통합 테스트 자료
-- `tts/`: TTS 관련 테스트 참고 자료
-- `orchestration/`: 실행 환경 및 모델 로딩 보조 코드
+| 폴더 | 설명 |
+|---|---|
+| [`stt/`](./stt/) | STT 학습·추론·평가·변환 코드 |
+| [`docs/stt-results/`](./docs/stt-results/) | STT 평가 결과 및 분석 자료 |
+| [`integration/`](./integration/) | STT 관련 통합 테스트 자료 |
+| [`orchestration/`](./orchestration/) | STT 실행 환경 및 모델 연결 보조 코드 |
 
-## 🧩 주요 코드
-
-### 학습 및 평가용
-
-```text
-load_stt_model()
-stt_transcribe_with_context()
-run_batch_test()
-```
-
-QLoRA Adapter를 Transformers 기반으로 불러와 오프라인 평가와 모델 비교에 사용합니다.
-
-### 배포 및 실시간 추론용
-
-```text
-load_ct2_model()
-stt_transcribe()
-```
-
-CTranslate2 int8 모델을 faster-whisper로 로드하여 실시간 음성 인식에 사용합니다.
-
-## 🔤 음성 인식 후처리
-
-STT 결과에서 자주 사용되는 단위 표현을 한글 단위로 변환하는 후처리를 적용했습니다.
-
-```text
-g   → 그램
-kg  → 킬로그램
-ml  → 밀리리터
-L   → 리터
-```
-
-또한 요리 음성에 자주 나타나는 숫자, 수량, 재료 표현을 보정하여 조리 명령어 인식의 안정성을 높였습니다.
-
-## ⚙️ 실행 환경
-
-- Python
-- PyTorch
-- Transformers
-- PEFT
-- bitsandbytes
-- QLoRA
-- Whisper Large-v3-turbo
-- faster-whisper
-- CTranslate2
-- CUDA GPU
-
-환경변수는 `.env.example`을 참고하여 로컬 `.env`에 설정합니다.
-
-## 🔒 모델 보호
+## 🔒 모델 및 데이터 보호
 
 - 모델 가중치와 체크포인트는 저장소에 포함하지 않습니다.
-- 파인튜닝 Adapter는 비공개 Hugging Face 저장소에서 관리합니다.
-- 배포용 CTranslate2 모델도 저장소에 직접 포함하지 않습니다.
-- 토큰, API 키, 비밀번호, `.env` 파일은 공개하지 않습니다.
-- 학습 데이터와 원본 오디오는 저장소에 포함하지 않습니다.
+- 파인튜닝 Adapter와 배포용 모델은 공개하지 않습니다.
+- 비공개 모델 저장소 주소를 공개하지 않습니다.
+- 토큰, API 키, 비밀번호, `.env` 파일을 공개하지 않습니다.
+- 학습 음성 및 비공개 학습 데이터는 저장소에 포함하지 않습니다.
 
-## 🧪 통합 테스트
+## ℹ️ 담당 범위 안내
 
-TTS가 생성한 음성을 다시 STT 모델에 입력하여 음성 인식 결과를 확인했습니다.
+본 저장소는 ChefEar 프로젝트 중 개인적으로 담당한 STT 영역을 중심으로 구성되어 있습니다.
 
-```text
-TTS 음성 생성
-→ STT 재인식
-→ 원문과 결과 비교
-→ CER·WER 측정
-```
-
-이를 통해 단순한 텍스트 입력 평가뿐 아니라 실제 음성 출력 환경에서의 인식 품질도 확인했습니다.
+TTS 모델의 상세 개발·학습·평가 내용은 본인의 담당 범위가 아니며, 이 저장소에서 다루지 않습니다. TTS는 팀 프로젝트의 별도 담당 영역으로 관리됩니다.
 
 ## 📌 최종 정리
 
-이 프로젝트에서는 Whisper Large-v3-turbo를 기반으로 요리 도메인 음성 데이터에 QLoRA 파인튜닝을 적용했습니다.
+본 프로젝트에서는 Whisper Large-v3-turbo를 기반으로 요리 도메인 음성 데이터에 QLoRA 파인튜닝을 적용했습니다.
 
-모델 비교와 WER·CER 평가를 통해 최종 Adapter를 선정했으며, 실시간 서비스 적용을 위해 CTranslate2 int8 및 faster-whisper 기반의 추론 구조까지 구성했습니다.
+Fixed100과 신규500 평가를 통해 기본 인식 성능과 일반화 성능을 확인했으며, 오류 분석을 바탕으로 숫자·수량·단위, 재료명 및 조리동작 인식 성능을 개선했습니다.
 
-이 저장소는 개인 STT 모델 개발, 파인튜닝, 평가, 경량화 및 통합 테스트 과정을 기록한 포트폴리오용 저장소입니다.
+이 저장소는 ChefEar STT 모델의 개발 과정, 평가, 오류 분석 및 실시간 추론 적용 과정을 정리한 개인 포트폴리오용 저장소입니다.
