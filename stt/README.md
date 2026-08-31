@@ -133,8 +133,6 @@ CTranslate2 변환과 faster-whisper 기반 실시간 추론은 팀 GPU 환경�
 | 파일 | 설명 |
 |---|---|
 | `infer.py` | STT 모델 로드, 음성 인식 및 후처리 |
-| `finetune_whisper.py` | Whisper 기반 QLoRA 파인튜닝 |
-| `prepare_data.py` | 학습·평가 데이터 전처리 |
 | `export_ct2.py` | CTranslate2 int8 변환 과정 기록 |
 | `compare_realtime_models.py` | 파인튜닝 모델과 원본 모델 비교 |
 | `requirements-stt.txt` | STT 학습 및 평가 환경 의존성 |

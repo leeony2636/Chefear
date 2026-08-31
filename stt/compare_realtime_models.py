@@ -29,7 +29,7 @@
 
 사용법 (GPU 환경, ct2_int8 변환본이 이미 있어야 함 — export_ct2.py 참고)
 ------------------------------------------------------------------
-    python src/stt/compare_realtime_models.py 내목소리1.wav 내목소리2.wav ...
+    python stt/compare_realtime_models.py 내목소리1.wav 내목소리2.wav ...
 
 wav는 아무 녹음 앱으로나 "된장찌개" 등 실패했던 문장을 실제 육성으로 녹음해서 준비하면
 된다(16kHz가 아니어도 됨 — 두 함수 모두 내부에서 필요시 리샘플링한다).
@@ -40,18 +40,40 @@ import sys
 from pathlib import Path
 
 import librosa
+import torch
+from faster_whisper import WhisperModel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from stt.infer import stt_transcribe, stt_transcribe_realtime_base  # noqa: E402
+from stt.infer import transcribe_audio  # noqa: E402
+
+
+_base_model = None
+
+
+def transcribe_base(waveform, sample_rate: int = 16000) -> str:
+    """파인튜닝 전 원본 Whisper 모델로 음성을 인식합니다."""
+    global _base_model
+    if _base_model is None:
+        if not torch.cuda.is_available():
+            raise RuntimeError("원본 모델 비교에는 CUDA GPU가 필요합니다.")
+        _base_model = WhisperModel(
+            "large-v3-turbo",
+            device="cuda",
+            compute_type="int8",
+        )
+    if sample_rate != 16000:
+        waveform = librosa.resample(waveform, orig_sr=sample_rate, target_sr=16000)
+    segments, _ = _base_model.transcribe(waveform, language="ko", task="transcribe")
+    return "".join(segment.text for segment in segments).strip()
 
 
 def compare_one(audio_path: Path) -> None:
     waveform, sr = librosa.load(str(audio_path), sr=16000)
 
-    finetuned_text = stt_transcribe(waveform, sample_rate=16000)
-    base_text = stt_transcribe_realtime_base(waveform, sample_rate=16000)
+    finetuned_text = transcribe_audio(audio_path)
+    base_text = transcribe_base(waveform, sample_rate=16000)
 
     print(f"\n=== {audio_path.name} ===")
     print(f"파인튜닝 어댑터(현재 배포): {finetuned_text!r}")
@@ -60,7 +82,7 @@ def compare_one(audio_path: Path) -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("사용법: python src/stt/compare_realtime_models.py <wav 파일...>")
+        print("사용법: python stt/compare_realtime_models.py <wav 파일...>")
         raise SystemExit(1)
 
     for arg in sys.argv[1:]:

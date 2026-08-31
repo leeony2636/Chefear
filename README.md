@@ -78,11 +78,9 @@ STT 모델은 다음 기준으로 평가했습니다.
 |---|---|
 | [`stt/`](./stt/) | STT 학습·추론·평가·변환 코드 |
 | [`docs/stt-results/`](./docs/stt-results/) | STT 평가 결과 및 분석 자료 |
-| [`integration/`](./integration/) | STT 관련 통합 테스트 참고 자료 |
-| [`orchestration/`](./orchestration/) | STT 실행에 필요한 환경변수 및 실행 보조 코드 |
-| [`tts/`](./tts/) | 팀 프로젝트에서 포함된 TTS 참고 폴더 |
+| [`integration/`](./integration/) | 팀 프로젝트에 STT를 적용한 통합 테스트 참고 자료 |
 
-> 본 저장소의 핵심 개발 범위는 STT이며, `tts/`와 일부 통합 자료는 팀 프로젝트 과정에서 포함된 참고 영역입니다.
+> 본 저장소의 핵심 개발 범위는 STT입니다. TTS 모델 개발은 팀원의 담당 영역이므로 이 저장소에는 포함하지 않습니다.
 
 ## ⚙️ 실행 환경
 
